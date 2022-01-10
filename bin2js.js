@@ -27,20 +27,21 @@ function createFunction(name, binary) {
     // this means this script should be loaded dynamically
     const end = `window.pFuncs.push(${binFuncName});`;
     func.push(`function ${binFuncName}(payload_buffer_address){`);
+    // We might not need to use more memory.
     let binaryByteLength = 0x1000;
     if (binary.byteLength >= 0x1000) {
         // Add missing bytes
-        binaryByteLength += (binary.byteLength - binaryByteLength);
+        binaryByteLength += binary.byteLength - 0x1000;
         // Round to the next multiple of 4
         binaryByteLength = binaryByteLength - (binaryByteLength%4) + 4;
     }
     // Do this here so that it is already generated.
-    func.push(`let b=p.array_from_address(payload_buffer_address,${binaryByteLength});`);
+    func.push(`let b=p.array_from_address(payload_buffer_address,0x${binaryByteLength.toString(16).toLocaleUpperCase()});`);
     const alignedByteCount = Math.floor(binary.byteLength/4) * 4;
     // convert to big endian like original exploit does
     let i = 0;
     for(;i < alignedByteCount/4; i++) {
-        func.push(`b[${i * 4}]=0x${binary.readUInt32LE(i * 4).toString(16).toLocaleUpperCase()};`)
+        func.push(`b[${i}]=0x${binary.readUInt32LE(i * 4).toString(16).toLocaleUpperCase()};`)
     }
     
     // This might never happen 
