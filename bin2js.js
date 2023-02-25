@@ -35,8 +35,10 @@ function createFunction(name, binary) {
         // Round to the next multiple of 4
         binaryByteLength = binaryByteLength - (binaryByteLength%4) + 4;
     }
-    // Do this here so that it is already generated.
-    func.push(`let b=p.array_from_address(payload_buffer_address,0x${binaryByteLength.toString(16).toLocaleUpperCase()});`);
+    
+    const allocationSize = binaryByteLength - (binaryByteLength%4096) + 4096;
+    func.push(`let addr = chain.syscall(477, new int64(0x26200000, 0x9), 0x${allocationSize.toString(16).toLocaleUpperCase()}, 7, 0x41000, -1, 0);`);
+    func.push(`let b=p.array_from_address(addr,0x${(binaryByteLength >> 0x2).toString(16).toLocaleUpperCase()});`);
     const alignedByteCount = Math.floor(binary.byteLength/4) * 4;
     // convert to big endian like original exploit does
     let i = 0;
@@ -48,7 +50,7 @@ function createFunction(name, binary) {
     if (alignedByteCount !== binary.byteLength) {
         console.log(name, "byte length is not a multiple of 4...", alignedByteCount, binary.byteLength);
     }
-
+    func.push('return addr;');
     // Handle remaining.
     func.push('}');
     return boiler + func.join('') + end;
